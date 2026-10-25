@@ -1,54 +1,79 @@
-import { randomUUID } from "node:crypto";
-import { Task, CreateTaskInput, UpdateTaskInput } from "../models/task.model";
+import { isValidObjectId } from "mongoose";
+import {
+  Task,
+  CreateTaskInput,
+  UpdateTaskInput,
+  TaskModel,
+  mapTaskDocument,
+} from "../models/task.model";
 import { ITaskRepository } from "./task.repository.interface";
 
 export class TaskRepository implements ITaskRepository {
-  private tasks: Task[] = [];
-
-  findAll(): Task[] {
-    return this.tasks;
+  async findAll(): Promise<Task[]> {
+    const docs = await TaskModel.find().sort({ createdAt: -1 }).exec();
+    return docs.map(mapTaskDocument);
   }
 
-  findById(id: string): Task | undefined {
-    return this.tasks.find((task) => task.id === id);
+  async findById(id: string): Promise<Task | null> {
+    if (!isValidObjectId(id)) {
+      return null;
+    }
+    const doc = await TaskModel.findById(id).exec();
+    if (!doc) {
+      return null;
+    }
+    return mapTaskDocument(doc);
   }
 
-  create(input: CreateTaskInput): Task {
-    const newTask: Task = {
-      id: randomUUID(),
+  async create(input: CreateTaskInput): Promise<Task> {
+    const doc = await TaskModel.create({
       title: input.title,
       completed: false,
-    };
-    this.tasks.push(newTask);
-    return newTask;
+    });
+    return mapTaskDocument(doc);
   }
 
-  update(id: string, input: UpdateTaskInput): Task | undefined {
-    const task = this.findById(id);
-    if (!task) {
-      return undefined;
+  async update(id: string, input: UpdateTaskInput): Promise<Task | null> {
+    if (!isValidObjectId(id)) {
+      return null;
     }
-    task.title = input.title;
-    task.completed = input.completed;
-    return task;
-  }
+    const doc = await TaskModel.findByIdAndUpdate(
+      id,
+      {
+        title: input.title,
+        completed: input.completed,
+      },
+      { returnDocument: "after", runValidators: true }
+    ).exec();
 
-  markCompleted(id: string): Task | undefined {
-    const task = this.findById(id);
-    if (!task) {
-      return undefined;
+    if (!doc) {
+      return null;
     }
-    task.completed = true;
-    return task;
+    return mapTaskDocument(doc);
   }
 
-  delete(id: string): boolean {
-    const index = this.tasks.findIndex((task) => task.id === id);
-    if (index === -1) {
+  async markCompleted(id: string): Promise<Task | null> {
+    if (!isValidObjectId(id)) {
+      return null;
+    }
+    const doc = await TaskModel.findByIdAndUpdate(
+      id,
+      { completed: true },
+      { returnDocument: "after", runValidators: true }
+    ).exec();
+
+    if (!doc) {
+      return null;
+    }
+    return mapTaskDocument(doc);
+  }
+
+  async delete(id: string): Promise<boolean> {
+    if (!isValidObjectId(id)) {
       return false;
     }
-    this.tasks.splice(index, 1);
-    return true;
+    const result = await TaskModel.findByIdAndDelete(id).exec();
+    return result !== null;
   }
 }
 

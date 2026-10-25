@@ -5,16 +5,15 @@ import { taskRepository } from "../repositories/task.repository";
 export class TaskService {
   constructor(private readonly repository: ITaskRepository = taskRepository) {}
 
-  getAllTasks(): Task[] {
+  async getAllTasks(): Promise<Task[]> {
     return this.repository.findAll();
   }
 
-  getTaskById(id: string): Task | null {
-    const task = this.repository.findById(id);
-    return task ?? null;
+  async getTaskById(id: string): Promise<Task | null> {
+    return this.repository.findById(id);
   }
 
-  createTask(title: unknown): Task {
+  async createTask(title: unknown): Promise<Task> {
     if (typeof title !== "string" || title.trim().length === 0) {
       throw new Error("A non-empty character only title is required");
     }
@@ -22,7 +21,11 @@ export class TaskService {
     return this.repository.create({ title: title.trim() });
   }
 
-  updateTask(id: string, title: unknown, completed: unknown): Task | null {
+  async updateTask(
+    id: string,
+    title: unknown,
+    completed: unknown
+  ): Promise<Task | null> {
     if (
       typeof title !== "string" ||
       title.trim().length === 0 ||
@@ -31,19 +34,17 @@ export class TaskService {
       throw new Error("A non-empty title and boolean completed value are required");
     }
 
-    const task = this.repository.update(id, {
+    return this.repository.update(id, {
       title: title.trim(),
       completed,
     });
-    return task ?? null;
   }
 
-  completeTask(id: string): Task | null {
-    const task = this.repository.markCompleted(id);
-    return task ?? null;
+  async completeTask(id: string): Promise<Task | null> {
+    return this.repository.markCompleted(id);
   }
 
-  deleteTask(id: string): boolean {
+  async deleteTask(id: string): Promise<boolean> {
     return this.repository.delete(id);
   }
 }
