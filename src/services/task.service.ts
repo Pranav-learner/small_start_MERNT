@@ -1,6 +1,7 @@
 import { Task } from "../models/task.model";
 import type { ITaskRepository } from "../repositories/task.repository.interface";
 import { taskRepository } from "../repositories/task.repository";
+import { BadRequestError } from "../errors/app-error";
 
 export class TaskService {
   constructor(private readonly repository: ITaskRepository = taskRepository) {}
@@ -15,7 +16,7 @@ export class TaskService {
 
   async createTask(title: unknown): Promise<Task> {
     if (typeof title !== "string" || title.trim().length === 0) {
-      throw new Error("A non-empty character only title is required");
+      throw new BadRequestError("A non-empty character only title is required");
     }
 
     return this.repository.create({ title: title.trim() });
@@ -31,7 +32,9 @@ export class TaskService {
       title.trim().length === 0 ||
       typeof completed !== "boolean"
     ) {
-      throw new Error("A non-empty title and boolean completed value are required");
+      throw new BadRequestError(
+        "A non-empty title and boolean completed value are required"
+      );
     }
 
     return this.repository.update(id, {

@@ -1,5 +1,9 @@
-import express, { Express, Request, Response, NextFunction } from "express";
+import express, { Express } from "express";
 import taskRoutes from "./routes/task.routes";
+import {
+  notFoundHandler,
+  errorHandler,
+} from "./middlewares/error.middleware";
 
 const app: Express = express();
 
@@ -15,11 +19,10 @@ app.use((req, _res, next) => {
 // Routes
 app.use("/api/v1/tasks", taskRoutes);
 
-// Global Error Handler
-app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-  console.error("Unhandled error:", err);
-  const message = err instanceof Error ? err.message : "Internal server error";
-  res.status(500).json({ error: message });
-});
+// 404 Handler for unknown routes
+app.use(notFoundHandler);
+
+// Global Error Handler (must be registered last)
+app.use(errorHandler);
 
 export default app;

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { taskService, TaskService } from "../services/task.service";
+import { NotFoundError } from "../errors/app-error";
 
 export class TaskController {
   constructor(private readonly service: TaskService = taskService) {}
@@ -26,8 +27,7 @@ export class TaskController {
       const { id } = req.params;
       const task = await this.service.getTaskById(id);
       if (!task) {
-        res.status(404).json({ error: "Task not found" });
-        return;
+        throw new NotFoundError("Task not found");
       }
       res.status(200).json({ data: task });
     } catch (error) {
@@ -41,18 +41,10 @@ export class TaskController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { title } = req.body as { title?: unknown };
+      const { title } = req.body as { title: string };
       const task = await this.service.createTask(title);
       res.status(201).json({ data: task });
     } catch (error) {
-      if (
-        error instanceof Error &&
-        (error.name === "ValidationError" ||
-          error.message.includes("title"))
-      ) {
-        res.status(400).json({ error: error.message });
-        return;
-      }
       next(error);
     }
   };
@@ -65,25 +57,15 @@ export class TaskController {
     try {
       const { id } = req.params;
       const { title, completed } = req.body as {
-        title?: unknown;
-        completed?: unknown;
+        title: string;
+        completed: boolean;
       };
       const task = await this.service.updateTask(id, title, completed);
       if (!task) {
-        res.status(404).json({ error: "Task not found" });
-        return;
+        throw new NotFoundError("Task not found");
       }
       res.status(200).json({ data: task });
     } catch (error) {
-      if (
-        error instanceof Error &&
-        (error.name === "ValidationError" ||
-          error.message.includes("title") ||
-          error.message.includes("completed"))
-      ) {
-        res.status(400).json({ error: error.message });
-        return;
-      }
       next(error);
     }
   };
@@ -97,8 +79,7 @@ export class TaskController {
       const { id } = req.params;
       const task = await this.service.completeTask(id);
       if (!task) {
-        res.status(404).json({ error: "Task not found" });
-        return;
+        throw new NotFoundError("Task not found");
       }
       res.status(200).json({ data: task });
     } catch (error) {
@@ -115,8 +96,7 @@ export class TaskController {
       const { id } = req.params;
       const deleted = await this.service.deleteTask(id);
       if (!deleted) {
-        res.status(404).json({ error: "Task not found" });
-        return;
+        throw new NotFoundError("Task not found");
       }
       res.status(204).end();
     } catch (error) {
